@@ -13,9 +13,10 @@ export default function RequestListPage({ user, requests = [], onNavigate, onLog
   const visible = requests.filter((r) => (tab === "all" || r.status === tab) && (!q || [r.id, r.position, r.requester, r.dept].some((v) => String(v || "").toLowerCase().includes(q))));
 
   return (
+    
     <Layout active="requests" crumb={["Manpower Requests", "Request List"]} onNavigate={onNavigate} onLogout={onLogout} user={user}>
       {["HR Administrator", "Requester"].includes(user?.role) && (
-  <div className="head-actions">
+  <div className="heading"><div><h1>List Requests Manpower</h1><div className="subtitle page-sub">รายการคำขอกำลังคนเพิ่ม</div></div>
     <button
       className="btn primary"
       onClick={() => onNavigate?.("newRequest")}
@@ -25,6 +26,7 @@ export default function RequestListPage({ user, requests = [], onNavigate, onLog
   </div>
 )}
       <section className="summary">
+        
         <div className="summary-card"><div className="label">คำขอทั้งหมด</div><div className="value">{requests.length}</div></div>
         <div className="summary-card"><div className="label">รออนุมัติ</div><div className="value">{count("pending")}</div></div>
         <div className="summary-card"><div className="label">อนุมัติแล้ว</div><div className="value">{count("approved")}</div></div>

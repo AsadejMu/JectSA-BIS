@@ -8,7 +8,10 @@ export default function LoginPage({ onLogin, errorMessage = "" }) {
   const submit = (e) => {
     e.preventDefault();
     if (!email.trim() || !password) { setError("กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน"); return; }
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setError("รูปแบบอีเมลไม่ถูกต้อง"); return; }
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setError("รูปแบบอีเมลไม่ถูกต้อง");
+      return;
+    }
     setError(""); onLogin?.(email.trim(), password);
   };
   return <div className="login-page">

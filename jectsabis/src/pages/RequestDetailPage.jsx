@@ -1,26 +1,295 @@
+
 import { useState } from "react";
 import Layout from "../components/Layout";
 
-const LABEL = { pending: "รออนุมัติ", approved: "อนุมัติแล้ว", rejected: "ไม่อนุมัติ" };
-const CLASS = { pending: "status", approved: "status green", rejected: "status red" };
+const LABEL = {
+  pending: "รออนุมัติ",
+  approved: "อนุมัติแล้ว",
+  rejected: "ไม่อนุมัติ",
+};
 
-export default function RequestDetailPage({ user, request, onNavigate, onLogout, onDecideRequest }) {
+const CLASS = {
+  pending: "status",
+  approved: "status green",
+  rejected: "status red",
+};
+
+export default function RequestDetailPage({
+  user,
+  request,
+  onNavigate,
+  onLogout,
+  onDecideRequest,
+}) {
   const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
-  if (!request) return <Layout active="requests" crumb={["Manpower Requests", "Request Detail"]} onNavigate={onNavigate} onLogout={onLogout} user={user}><h1>ไม่พบคำขอ</h1><button className="btn" onClick={() => onNavigate?.("requests")}>กลับไปหน้ารายการ</button></Layout>;
-  const canDecide = ["HR Administrator", "HR Manager", "Approver"].includes(user?.role);
+
+  if (!request) {
+    return (
+      <Layout
+        active="requests"
+        crumb={["Manpower Requests", "Request Detail"]}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+        user={user}
+      >
+        <h1>ไม่พบคำขอ</h1>
+        <button
+          className="btn"
+          onClick={() => onNavigate?.("requests")}
+        >
+          กลับไปหน้ารายการ
+        </button>
+      </Layout>
+    );
+  }
+
+  const canDecide = user?.role === "Approver";
+
   const decide = (status) => {
     if (!canDecide || request.status !== "pending") return;
+
     onDecideRequest?.(request.id, status, note);
-    setMessage(`เปลี่ยนสถานะเป็น “${LABEL[status]}” แล้ว`);
+
+    setMessage(`ส่งคำสั่ง${LABEL[status]}แล้ว`);
   };
-  return <Layout active="requests" crumb={["Manpower Requests", "Request Detail"]} onNavigate={onNavigate} onLogout={onLogout} user={user}>
-    <a href="#" className="back" onClick={(e) => { e.preventDefault(); onNavigate?.("requests"); }}>← <span>กลับไปหน้ารายการคำขอ</span></a>
-    <div className="heading"><div><h1>รายละเอียดคำขออัตรากำลังคน</h1><div className="subtitle">Request ID: <strong>{request.id}</strong> · สร้างเมื่อ {request.date}</div><div style={{ marginTop: 12 }}><span className={CLASS[request.status]}>{LABEL[request.status]}</span></div></div><div className="head-actions"><button className="btn lg" onClick={() => window.print()}>พิมพ์รายละเอียด</button></div></div>
-    {message && <div className="toast" role="status">{message} (บันทึกในเบราว์เซอร์นี้)</div>}
-    <section className="summary"><div className="summary-card"><div className="label">หมายเลขคำขอ</div><div className="value sm">{request.id}</div><div className="hint">Manpower Request</div></div><div className="summary-card"><div className="label">ผู้ส่งคำขอ</div><div className="value sm">{request.requester}</div><div className="hint">{request.dept}</div></div><div className="summary-card"><div className="label">ระดับตำแหน่ง</div><div className="value sm">{request.level}</div><div className="hint">จำนวน {request.quantity || 1} คน</div></div><div className="summary-card"><div className="label">สถานะปัจจุบัน</div><div className="value sm">{LABEL[request.status]}</div><div className="hint">สถานะคำขอ</div></div></section>
-    <div className="layout"><div className="stack"><section className="panel"><div className="panel-head"><h2>ข้อมูล Manpower Request</h2><small>รายละเอียดคำขอ</small></div><div className="panel-body"><div className="field-grid"><div className="field"><label>ตำแหน่งที่ต้องการ</label><div className="field-value">{request.position}</div></div><div className="field"><label>ระดับตำแหน่ง</label><div className="field-value">{request.level}</div></div><div className="field"><label>ผู้ร้องขอ</label><div className="field-value">{request.requester}</div></div><div className="field"><label>แผนก</label><div className="field-value">{request.dept}</div></div><div className="field"><label>จำนวนพนักงาน</label><div className="field-value">{request.quantity || 1}</div></div><div className="field"><label>ความเร่งด่วน</label><div className="field-value">{request.urgency === "urgent" ? "เร่งด่วน" : "ปกติ"}</div></div></div><div className="field" style={{ marginTop: 24 }}><label>เหตุผลในการขออัตรากำลัง</label><div className="reason">{request.reason || "ไม่ได้ระบุเหตุผล"}</div></div></div></section>
-      <section className="panel"><div className="panel-head"><h2>ประวัติการดำเนินการ</h2><small>Request History</small></div><div className="table-wrap"><table><thead><tr><th>วันที่</th><th>สถานะ</th><th>หมายเหตุ</th></tr></thead><tbody>{(request.history || []).map((item, i) => <tr key={`${item.date}-${i}`}><td>{item.date}</td><td><span className={CLASS[item.status]}>{LABEL[item.status]}</span></td><td>{item.note || "—"}</td></tr>)}</tbody></table>{!(request.history || []).length && <div className="empty">ยังไม่มีประวัติ</div>}</div></section></div>
-      <div className="stack">{canDecide && <section className="panel"><div className="panel-head"><h2>ดำเนินการพิจารณา</h2><small>Approval</small></div><div className="panel-body"><form className="approval-form" onSubmit={(e) => e.preventDefault()}><label htmlFor="approvalNote">ความคิดเห็นผู้อนุมัติ (ถ้ามี)</label><textarea id="approvalNote" value={note} onChange={(e) => setNote(e.target.value)} placeholder="ระบุเหตุผลหรือความคิดเห็นประกอบการพิจารณา..." disabled={request.status !== "pending"}/>{request.status === "pending" ? <div className="form-actions"><button type="button" className="btn approve" onClick={() => decide("approved")}>อนุมัติ</button><button type="button" className="btn reject" onClick={() => decide("rejected")}>ปฏิเสธ</button></div> : <div className="notice">คำขอนี้ได้รับการพิจารณาแล้ว</div>}</form></div></section>}<section className="panel"><div className="panel-head"><h2>Approval Workflow</h2><span className={CLASS[request.status]}>{LABEL[request.status]}</span></div><div className="panel-body"><p>1. ส่งคำขอโดย {request.requester}</p><p>2. สถานะปัจจุบัน: <strong>{LABEL[request.status]}</strong></p><p className="sub">เวอร์ชันทดลอง: ข้อมูลจัดเก็บใน localStorage ของเบราว์เซอร์เท่านั้น</p></div></section></div></div>
-  </Layout>;
+
+  return (
+    <Layout
+      active="requests"
+      crumb={["Manpower Requests", "Request Detail"]}
+      onNavigate={onNavigate}
+      onLogout={onLogout}
+      user={user}
+    >
+      <button
+        className="back"
+        onClick={() => onNavigate?.("requests")}
+      >
+        ← <span>กลับไปหน้ารายการคำขอ</span>
+      </button>
+
+      <div className="heading">
+        <div>
+          <h1>รายละเอียดคำขออัตรากำลังคน</h1>
+          <div className="subtitle">
+            Request ID: <strong>{request.id}</strong> · สร้างเมื่อ{" "}
+            {request.date}
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <span className={CLASS[request.status]}>
+              {LABEL[request.status]}
+            </span>
+          </div>
+        </div>
+
+        <div className="head-actions">
+          <button className="btn lg" onClick={() => window.print()}>
+            พิมพ์รายละเอียด
+          </button>
+        </div>
+      </div>
+
+      {message && (
+        <div className="toast" role="status">
+          {message}
+        </div>
+      )}
+
+      <section className="summary">
+        <div className="summary-card">
+          <div className="label">หมายเลขคำขอ</div>
+          <div className="value sm">{request.id}</div>
+          <div className="hint">Manpower Request</div>
+        </div>
+
+        <div className="summary-card">
+          <div className="label">ผู้ส่งคำขอ</div>
+          <div className="value sm">{request.requester}</div>
+          <div className="hint">{request.dept}</div>
+        </div>
+
+        <div className="summary-card">
+          <div className="label">ระดับตำแหน่ง</div>
+          <div className="value sm">{request.level}</div>
+          <div className="hint">
+            จำนวน {request.quantity || 1} คน
+          </div>
+        </div>
+
+        <div className="summary-card">
+          <div className="label">สถานะปัจจุบัน</div>
+          <div className="value sm">{LABEL[request.status]}</div>
+          <div className="hint">สถานะคำขอ</div>
+        </div>
+      </section>
+
+      <div className="layout">
+        <div className="stack">
+          <section className="panel">
+            <div className="panel-head">
+              <h2>ข้อมูล Manpower Request</h2>
+              <small>รายละเอียดคำขอ</small>
+            </div>
+
+            <div className="panel-body">
+              <div className="field-grid">
+                <div className="field">
+                  <label>ตำแหน่งที่ต้องการ</label>
+                  <div className="field-value">{request.position}</div>
+                </div>
+
+                <div className="field">
+                  <label>ระดับตำแหน่ง</label>
+                  <div className="field-value">{request.level}</div>
+                </div>
+
+                <div className="field">
+                  <label>ผู้ร้องขอ</label>
+                  <div className="field-value">{request.requester}</div>
+                </div>
+
+                <div className="field">
+                  <label>แผนก</label>
+                  <div className="field-value">{request.dept}</div>
+                </div>
+
+                <div className="field">
+                  <label>จำนวนพนักงาน</label>
+                  <div className="field-value">{request.quantity || 1}</div>
+                </div>
+
+                <div className="field">
+                  <label>ความเร่งด่วน</label>
+                  <div className="field-value">
+                    {request.urgency === "urgent" ? "เร่งด่วน" : "ปกติ"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="field" style={{ marginTop: 24 }}>
+                <label>เหตุผลในการขออัตรากำลัง</label>
+                <div className="reason">
+                  {request.reason || "ไม่ได้ระบุเหตุผล"}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="panel-head">
+              <h2>ประวัติการดำเนินการ</h2>
+              <small>Request History</small>
+            </div>
+
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>วันที่</th>
+                    <th>ผู้ดำเนินการ</th>
+                    <th>สถานะ</th>
+                    <th>หมายเหตุ</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {(request.history || []).map((item, i) => (
+                    <tr key={`${item.date}-${i}`}>
+                      <td>{item.date || "—"}</td>
+                      <td>{request.requester || "ไม่ระบุชื่อ"}</td>
+                      <td>
+                        <span className={CLASS[item.status] || "status"}>
+                          {LABEL[item.status] || item.status || "—"}
+                        </span>
+                      </td>
+                      <td>{item.note || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {!(request.history || []).length && (
+                <div className="empty">ยังไม่มีประวัติ</div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <div className="stack">
+          {canDecide && (
+            <section className="panel">
+              <div className="panel-head">
+                <h2>ดำเนินการพิจารณา</h2>
+                <small>Approval</small>
+              </div>
+
+              <div className="panel-body">
+                <form
+                  className="approval-form"
+                  onSubmit={(e) => e.preventDefault()}
+                >
+                  <label htmlFor="approvalNote">
+                    ความคิดเห็นผู้อนุมัติ (ถ้ามี)
+                  </label>
+
+                  <textarea
+                    id="approvalNote"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="ระบุเหตุผลหรือความคิดเห็นประกอบการพิจารณา..."
+                    disabled={request.status !== "pending"}
+                  />
+
+                  {request.status === "pending" ? (
+                    <div className="form-actions">
+                      <button
+                        type="button"
+                        className="btn approve"
+                        onClick={() => decide("approved")}
+                      >
+                        อนุมัติ
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn reject"
+                        onClick={() => decide("rejected")}
+                      >
+                        ปฏิเสธ
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="notice">
+                      คำขอนี้ได้รับการพิจารณาแล้ว
+                    </div>
+                  )}
+                </form>
+              </div>
+            </section>
+          )}
+
+          <section className="panel">
+            <div className="panel-head">
+              <h2>Approval Workflow</h2>
+              <span className={CLASS[request.status]}>
+                {LABEL[request.status]}
+              </span>
+            </div>
+
+            <div className="panel-body">
+              <p>1. ส่งคำขอโดย {request.requester}</p>
+              <p>
+                2. สถานะปัจจุบัน:{" "}
+                <strong>{LABEL[request.status]}</strong>
+              </p>
+              <p className="sub">
+                ประวัติการดำเนินการจะแสดงชื่อจากข้อมูลที่บันทึกไว้
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </Layout>
+  );
 }

@@ -22,7 +22,7 @@ export default function RequestFormPage({ user, onNavigate, onLogout, onCreateRe
 
   return (
     <Layout active="requests" crumb={["Manpower Requests", "Create Request"]} onNavigate={onNavigate} onLogout={onLogout} user={user}>
-      <a href="#" className="back" onClick={(e) => { e.preventDefault(); onNavigate?.("requests"); }}>← <span>กลับไปหน้ารายการคำขอ</span></a>
+      <button href="#" className="back" onClick={(e) => { e.preventDefault(); onNavigate?.("requests"); }}>← <span>กลับไปหน้ารายการคำขอ</span></button>
       <h1>สร้างคำขออัตรากำลังคน</h1>
       <div className="subtitle page-sub">กรอกข้อมูลที่จำเป็นเพื่อส่งคำขอให้ผู้อนุมัติพิจารณา</div>
       <section className="panel">

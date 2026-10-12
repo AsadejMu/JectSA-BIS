@@ -1,63 +1,129 @@
-const STORAGE_KEY = "manpower.requests.v1";
 
-const INITIAL_REQUESTS = [
-  { id: "MR-2026-0018", position: "Software Developer", level: "Junior", requester: "Nattapong S.", requesterEmail: "requester@company.co.th", dept: "IT Department", date: "8 ต.ค. 2026", status: "pending", quantity: 1, reason: "ทีมพัฒนาระบบมีงานจากโครงการใหม่เพิ่มขึ้น ต้องการบุคลากรเพิ่มเติม", urgency: "normal", history: [] },
-  { id: "MR-2026-0017", position: "QA Engineer", level: "Mid", requester: "Kanokwan P.", requesterEmail: "kanokwan@company.co.th", dept: "IT Department", date: "7 ต.ค. 2026", status: "pending", quantity: 1, reason: "ต้องการเพิ่มผู้ทดสอบระบบ", urgency: "normal", history: [] },
-  { id: "MR-2026-0016", position: "Accountant", level: "Senior", requester: "Warunee C.", dept: "Finance", date: "5 ต.ค. 2026", status: "approved", quantity: 1, reason: "รองรับปริมาณงานบัญชีที่เพิ่มขึ้น", urgency: "normal", history: [] },
-  { id: "MR-2026-0015", position: "Marketing Executive", level: "Junior", requester: "Pichit L.", dept: "Marketing", date: "3 ต.ค. 2026", status: "rejected", quantity: 1, reason: "ขยายทีมการตลาด", urgency: "normal", history: [] },
-  { id: "MR-2026-0014", position: "Data Analyst", level: "Mid", requester: "Suda R.", dept: "Operations", date: "1 ต.ค. 2026", status: "approved", quantity: 1, reason: "ช่วยวิเคราะห์ข้อมูลการดำเนินงาน", urgency: "normal", history: [] },
-];
+import { supabase } from "../lib/supabaseClient";
 
-function readStored() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function getRequests() {
-  const stored = readStored();
-  if (Array.isArray(stored)) return stored;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_REQUESTS));
-  return INITIAL_REQUESTS;
-}
-
-function saveRequests(requests) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(requests));
-  return requests;
-}
-
-export function createRequest(data) {
-  const requests = getRequests();
-  const nextNumber = requests.reduce((max, item) => {
-    const match = item.id?.match(/MR-\d{4}-(\d+)/);
-    return match ? Math.max(max, Number(match[1])) : max;
-  }, 0) + 1;
-  const now = new Date();
-  const request = {
-    ...data,
-    id: `MR-${now.getFullYear()}-${String(nextNumber).padStart(4, "0")}`,
-    date: now.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }),
-    status: "pending",
-    history: [{ status: "pending", note: "ส่งคำขอ", date: now.toLocaleString("th-TH") }],
-  };
-  saveRequests([request, ...requests]);
-  return request;
-}
-
-export function updateRequestStatus(id, status, note = "", actor = "ผู้อนุมัติ") {
-  const requests = getRequests();
-  const updated = requests.map((request) => {
-    if (request.id !== id) return request;
-    const now = new Date();
-    return {
-      ...request,
-      status,
-      history: [...(request.history || []), { status, note: note.trim(), actor, date: now.toLocaleString("th-TH") }],
-    };
+function formatDate(date) {
+  if (!date) return "";
+  return new Date(`${date}T00:00:00`).toLocaleDateString("th-TH", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
-  saveRequests(updated);
-  return updated.find((request) => request.id === id) || null;
+}
+
+function formatRequest(row) {
+  return {
+    id: row.id,
+    position: row.position,
+    level: row.level,
+    requester: row.requester,
+    requesterEmail: row.requester_email,
+    dept: row.dept,
+    date: formatDate(row.request_date),
+    status: row.status,
+    quantity: row.quantity,
+    reason: row.reason,
+    urgency: row.urgency,
+    history: row.history || [],
+  };
+}
+
+export async function getRequests() {
+  const { data, error } = await supabase
+    .from("manpower_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return data.map(formatRequest);
+}
+
+
+export async function createRequest(data) {
+  const { data: authData, error: authError } =
+    await supabase.auth.getUser();
+
+  if (authError || !authData.user) {
+    throw new Error("กรุณาเข้าสู่ระบบใหม่");
+  }
+
+  const user = authData.user;
+  const now = new Date();
+
+  // ขอ Request ID จาก Supabase
+  const { data: requestId, error: idError } = await supabase
+    .rpc("generate_manpower_request_id");
+
+  if (idError) throw idError;
+
+  const request = {
+    id: requestId,
+    position: data.position,
+    level: data.level,
+    requester: data.requester,
+    requester_email: user.email,
+    requester_id: user.id,
+    dept: data.dept,
+    request_date: now.toISOString().slice(0, 10),
+    status: "pending",
+    quantity: Number(data.quantity) || 1,
+    reason: data.reason,
+    urgency: data.urgency || "normal",
+    history: [
+      {
+        status: "pending",
+        note: "ส่งคำขอ",
+        date: now.toLocaleString("th-TH"),
+      },
+    ],
+  };
+
+  const { data: created, error } = await supabase
+    .from("manpower_requests")
+    .insert(request)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return formatRequest(created);
+}
+
+export async function updateRequestStatus(
+  id,
+  status,
+  note = "",
+  actor = "ผู้อนุมัติ"
+) {
+  const { data: current, error: readError } = await supabase
+    .from("manpower_requests")
+    .select("history")
+    .eq("id", id)
+    .single();
+
+  if (readError) throw readError;
+
+  const history = current.history || [];
+
+  const { data: updated, error } = await supabase
+    .from("manpower_requests")
+    .update({
+      status,
+      history: [
+        ...history,
+        {
+          status,
+          note: note.trim(),
+          actor,
+          date: new Date().toLocaleString("th-TH"),
+        },
+      ],
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return formatRequest(updated);
 }

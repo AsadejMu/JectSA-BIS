@@ -18,44 +18,126 @@ const PAGE_ROLES = {
 };
 
 export default function App() {
-  const [user, setUser] = useState(() => getSession());
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [page, setPage] = useState("requests");
-  const [requests, setRequests] = useState(() => getRequests());
+  const [requests, setRequests] = useState([]);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [loginError, setLoginError] = useState("");
 
   useEffect(() => {
-    const refresh = () => setRequests(getRequests());
-    window.addEventListener("storage", refresh);
-    return () => window.removeEventListener("storage", refresh);
+    async function loadUser() {
+      try {
+        const currentUser = await getSession();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("โหลด session ไม่สำเร็จ:", error);
+      } finally {
+        setAuthLoading(false);
+      }
+    }
+
+    loadUser();
   }, []);
+
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function loadRequests() {
+      try {
+        const data = await getRequests();
+        setRequests(data);
+      } catch (error) {
+        console.error("โหลดคำขอไม่สำเร็จ:", error);
+      }
+    }
+
+    loadRequests();
+  }, [user]);
 
   const allowed = (target, currentUser = user) => Boolean(currentUser && PAGE_ROLES[target]?.includes(currentUser.role));
   const navigate = (target) => {
     if (allowed(target)) setPage(target);
     else setPage("requests");
   };
-  const handleLogin = (email, password) => {
-    const result = login(email, password);
-    if (!result.ok) { setLoginError(result.message); return; }
-    setLoginError(""); setUser(result.user); setPage("requests");
+  const handleLogin = async (email, password) => {
+    const result = await login(email, password);
+
+    if (!result.ok) {
+      setLoginError(result.message);
+      return;
+    }
+
+    setLoginError("");
+    setUser(result.user);
+    setPage("requests");
   };
-  const handleLogout = () => { logout(); setUser(null); setPage("requests"); setSelectedRequestId(null); };
+
+  const handleLogout = async () => {
+    await logout();
+    setUser(null);
+    setPage("requests");
+    setSelectedRequestId(null);
+  };
+  const addRequest = async (data) => {
+    try {
+      const created = await createRequest({
+        ...data,
+        requester: user?.name || user?.email,
+        requesterEmail: user?.email,
+      });
+
+      const updatedRequests = await getRequests();
+      setRequests(updatedRequests);
+      setSelectedRequestId(created.id);
+      setPage("requests");
+    } catch (error) {
+      console.error("สร้างคำขอไม่สำเร็จ:", error);
+      alert("บันทึกคำขอไม่สำเร็จ กรุณาลองใหม่");
+    }
+  };
+  const decideRequest = async (id, status, note) => {
+    if (!["HR Administrator", "HR Manager", "Approver"].includes(user?.role)) {
+      return;
+    }
+
+    try {
+      await updateRequestStatus(
+        id,
+        status,
+        note,
+        user?.name || user?.email
+      );
+
+      const updatedRequests = await getRequests();
+      setRequests(updatedRequests);
+    } catch (error) {
+      console.error("เปลี่ยนสถานะไม่สำเร็จ:", error);
+      alert("เปลี่ยนสถานะไม่สำเร็จ กรุณาลองใหม่");
+    }
+  };
+
+
   const openDetail = (id) => {
     const request = requests.find((item) => item.id === id);
+
     if (!request) return;
-    if (user?.role === "Requester" && request.requesterEmail !== user.email) return;
-    setSelectedRequestId(id); setPage("detail");
+
+    if (
+      user?.role === "Requester" &&
+      request.requesterEmail !== user.email
+    ) {
+      return;
+    }
+
+    setSelectedRequestId(id);
+    setPage("detail");
   };
-  const addRequest = (data) => {
-    const created = createRequest({ ...data, requester: user?.name || user?.email, requesterEmail: user?.email });
-    setRequests(getRequests()); setSelectedRequestId(created.id); setPage("requests");
-  };
-  const decideRequest = (id, status, note) => {
-    if (!["HR Administrator", "HR Manager", "Approver"].includes(user?.role)) return;
-    updateRequestStatus(id, status, note, user?.name || user?.email);
-    setRequests(getRequests());
-  };
+
+  if (authLoading) {
+    return <div>กำลังโหลด...</div>;
+  }
 
   if (!user) return <LoginPage onLogin={handleLogin} errorMessage={loginError} />;
   const currentPage = allowed(page) ? page : "requests";
