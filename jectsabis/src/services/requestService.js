@@ -89,12 +89,24 @@ export async function createRequest(data) {
   return formatRequest(created);
 }
 
+
 export async function updateRequestStatus(
   id,
   status,
   note = "",
   actor = "ผู้อนุมัติ"
 ) {
+  // ตรวจสอบผู้ใช้ที่ล็อกอิน
+  const { data: authData, error: authError } =
+    await supabase.auth.getUser();
+
+  if (authError || !authData.user) {
+    throw new Error("กรุณาเข้าสู่ระบบใหม่");
+  }
+
+  const user = authData.user;
+
+  // อ่านประวัติเดิม
   const { data: current, error: readError } = await supabase
     .from("manpower_requests")
     .select("history")
@@ -104,8 +116,10 @@ export async function updateRequestStatus(
   if (readError) throw readError;
 
   const history = current.history || [];
+  const now = new Date();
 
-  const { data: updated, error } = await supabase
+  // อัปเดตคำขอและประวัติเดิม
+  const { data: updated, error: updateError } = await supabase
     .from("manpower_requests")
     .update({
       status,
@@ -115,7 +129,7 @@ export async function updateRequestStatus(
           status,
           note: note.trim(),
           actor,
-          date: new Date().toLocaleString("th-TH"),
+          date: now.toLocaleString("th-TH"),
         },
       ],
     })
@@ -123,7 +137,45 @@ export async function updateRequestStatus(
     .select()
     .single();
 
-  if (error) throw error;
+  if (updateError) throw updateError;
+
+  // บันทึกประวัติลงตาราง approval_records
+  const { error: approvalError } = await supabase
+    .from("approval_records")
+    .insert({
+      request_id: id,
+      approver_id: user.id,
+      approval_status: status,
+    });
+
+  if (approvalError) {
+    throw new Error(
+      "อัปเดตสถานะคำขอแล้ว แต่บันทึก approval_records ไม่สำเร็จ: " +
+      approvalError.message
+    );
+  }
 
   return formatRequest(updated);
+}
+
+
+export async function getApprovalRecords() {
+  const { data, error } = await supabase
+    .from("approval_records")
+    .select(`
+      approval_id,
+      request_id,
+      approver_id,
+      approval_status,
+      created_at,
+      profiles (
+        name,
+        email
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return data;
 }

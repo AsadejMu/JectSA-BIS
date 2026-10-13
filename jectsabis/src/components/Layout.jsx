@@ -1,8 +1,31 @@
+
 const NAV_ITEMS = [
-  { icon: "▤", label: "Manpower Requests", page: "requests", roles: ["HR Administrator", "HR Manager", "Approver", "Requester"] },
-  { icon: "♙", label: "Users & Roles", page: "users", roles: ["HR Administrator"] },
+  {
+    icon: "▤",
+    label: "Manpower Requests",
+    page: "requests",
+    roles: ["HR Administrator", "HR Manager", "Approver", "Requester"],
+  },
+  {
+    icon: "✓",
+    label: "ศูนย์อนุมัติ",
+    page: "approvals",
+    roles: ["HR Administrator", "HR Manager", "Approver"],
+  },
+  {
+    icon: "♙",
+    label: "Users & Roles",
+    page: "users",
+    roles: ["HR Administrator"],
+  },
 ];
-const ROLE_LABELS = { "HR Administrator": "ผู้ดูแลระบบ", "HR Manager": "ฝ่ายบุคคล", Approver: "ผู้อนุมัติ", Requester: "ผู้ส่งคำขอ" };
+
+const ROLE_LABELS = {
+  "HR Administrator": "ผู้ดูแลระบบ",
+  "HR Manager": "ฝ่ายบุคคล",
+  Approver: "ผู้อนุมัติ",
+  Requester: "ผู้ส่งคำขอ",
+};
 
 export default function Layout({ active, crumb, user, onNavigate, onLogout, children }) {
   const name = user?.name || user?.email?.split("@")[0] || "User";

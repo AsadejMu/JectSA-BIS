@@ -1,9 +1,44 @@
+
 import { supabase } from "../lib/supabaseClient";
+
+async function getProfile(userId) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(`
+      id,
+      name,
+      email,
+      dept,
+      active,
+      role_id,
+      created_at,
+      roles (
+        role_name
+      )
+    `)
+    .eq("id", userId)
+    .single();
+
+  if (error || !data) {
+    return { profile: null, error };
+  }
+
+  // แปลงชื่อ Role จากตาราง roles
+  // ให้โค้ดเดิมยังใช้ user.role ได้เหมือนเดิม
+  const profile = {
+    ...data,
+    role: data.roles?.role_name || null,
+  };
+
+  delete profile.roles;
+
+  return { profile, error: null };
+}
 
 export async function login(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim(),
-    password: password,
+    password,
   });
 
   if (error) {
@@ -13,13 +48,11 @@ export async function login(email, password) {
     };
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, name, email, dept, role, active")
-    .eq("id", data.user.id)
-    .single();
+  const { profile, error: profileError } = await getProfile(
+    data.user.id
+  );
 
-  if (profileError || !profile || !profile.active) {
+  if (profileError || !profile || !profile.active || !profile.role) {
     await supabase.auth.signOut();
 
     return {
@@ -40,13 +73,9 @@ export async function getSession() {
 
   if (!session) return null;
 
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("id, name, email, dept, role, active")
-    .eq("id", session.user.id)
-    .single();
+  const { profile, error } = await getProfile(session.user.id);
 
-  if (error || !profile || !profile.active) {
+  if (error || !profile || !profile.active || !profile.role) {
     await supabase.auth.signOut();
     return null;
   }
@@ -68,7 +97,7 @@ export async function resetUserPassword(id, password) {
     {
       body: {
         userId: id,
-        password: password,
+        password,
       },
     }
   );
@@ -91,16 +120,30 @@ export async function resetUserPassword(id, password) {
 export async function getUsers() {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, name, email, dept, role, active, created_at")
+    .select(`
+      id,
+      name,
+      email,
+      dept,
+      active,
+      role_id,
+      created_at,
+      roles (
+        role_name
+      )
+    `)
     .order("created_at", { ascending: false });
 
   if (error) {
     throw new Error("โหลดรายชื่อผู้ใช้ไม่สำเร็จ: " + error.message);
   }
 
-  return data || [];
+  return (data || []).map((profile) => ({
+    ...profile,
+    role: profile.roles?.role_name || null,
+    roles: undefined,
+  }));
 }
-
 
 export async function createUser(data) {
   const { data: result, error } = await supabase.functions.invoke(
@@ -131,18 +174,50 @@ export async function createUser(data) {
   return result;
 }
 
-
 export async function updateUser(id, patch) {
+  // แปลงชื่อ Role เป็น role_id ก่อนบันทึก
+  const updateData = { ...patch };
+
+  if (Object.prototype.hasOwnProperty.call(updateData, "role")) {
+    const { data: roleData, error: roleError } = await supabase
+      .from("roles")
+      .select("role_id")
+      .eq("role_name", updateData.role)
+      .single();
+
+    if (roleError || !roleData) {
+      throw new Error("ไม่พบ Role ที่เลือก");
+    }
+
+    updateData.role_id = roleData.role_id;
+    delete updateData.role;
+  }
+
   const { data, error } = await supabase
     .from("profiles")
-    .update(patch)
+    .update(updateData)
     .eq("id", id)
-    .select()
+    .select(`
+      id,
+      name,
+      email,
+      dept,
+      active,
+      role_id,
+      created_at,
+      roles (
+        role_name
+      )
+    `)
     .single();
 
   if (error) {
     throw new Error("อัปเดตผู้ใช้ไม่สำเร็จ: " + error.message);
   }
 
-  return data;
+  return {
+    ...data,
+    role: data.roles?.role_name || null,
+    roles: undefined,
+  };
 }

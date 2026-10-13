@@ -197,7 +197,7 @@ export default function RequestDetailPage({
                   {(request.history || []).map((item, i) => (
                     <tr key={`${item.date}-${i}`}>
                       <td>{item.date || "—"}</td>
-                      <td>{request.requester || "ไม่ระบุชื่อ"}</td>
+                      <td>{item.actor || request.requester || "ไม่ระบุชื่อ"}</td>
                       <td>
                         <span className={CLASS[item.status] || "status"}>
                           {LABEL[item.status] || item.status || "—"}
