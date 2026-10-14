@@ -225,7 +225,7 @@ export default function UserProfilePage({
         <div>
           <h1>ผู้ใช้งานและสิทธิ์</h1>
           <div className="subtitle page-sub">
-            สร้างบัญชี กำหนด Role รีเซ็ตรหัสผ่าน และเปิด/ปิดบัญชี
+            สร้างบัญชี | Change Role | Reset Password และ Lock / Unlock ผู้บัญชี
           </div>
         </div>
 
@@ -475,7 +475,7 @@ export default function UserProfilePage({
             {
               users.filter(
                 (u) =>
-                  u.role === "Approver" || u.role === "HR Manager"
+                  u.role === "Approver"
               ).length
             }
           </div>
@@ -552,7 +552,7 @@ export default function UserProfilePage({
                         u.active ? "status green" : "status off"
                       }
                     >
-                      {u.active ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                      {u.active ? "Active" : "Locked"}
                     </span>
                   </td>
 
@@ -582,7 +582,7 @@ export default function UserProfilePage({
                           )
                         }
                       >
-                        {u.active ? "ปิดบัญชี" : "เปิดบัญชี"}
+                        {u.active ? "Lock" : "Unlock"}
                       </button>
                     </div>
                   </td>

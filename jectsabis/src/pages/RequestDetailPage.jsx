@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Layout from "../components/Layout";
 
@@ -20,14 +19,22 @@ export default function RequestDetailPage({
   onNavigate,
   onLogout,
   onDecideRequest,
+  backPage = "requests",
 }) {
   const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
 
+  const backLabel =
+    backPage === "approvals"
+      ? "กลับไปหน้าศูนย์อนุมัติ"
+      : "กลับไปหน้ารายการคำขอ";
+
+  const activeMenu = backPage;
+
   if (!request) {
     return (
       <Layout
-        active="requests"
+        active={activeMenu}
         crumb={["Manpower Requests", "Request Detail"]}
         onNavigate={onNavigate}
         onLogout={onLogout}
@@ -36,9 +43,9 @@ export default function RequestDetailPage({
         <h1>ไม่พบคำขอ</h1>
         <button
           className="btn"
-          onClick={() => onNavigate?.("requests")}
+          onClick={() => onNavigate?.(backPage)}
         >
-          กลับไปหน้ารายการ
+          {backLabel}
         </button>
       </Layout>
     );
@@ -56,7 +63,7 @@ export default function RequestDetailPage({
 
   return (
     <Layout
-      active="requests"
+      active={activeMenu}
       crumb={["Manpower Requests", "Request Detail"]}
       onNavigate={onNavigate}
       onLogout={onLogout}
@@ -64,9 +71,9 @@ export default function RequestDetailPage({
     >
       <button
         className="back"
-        onClick={() => onNavigate?.("requests")}
+        onClick={() => onNavigate?.(backPage)}
       >
-        ← <span>กลับไปหน้ารายการคำขอ</span>
+        ← <span>{backLabel}</span>
       </button>
 
       <div className="heading">
@@ -155,12 +162,12 @@ export default function RequestDetailPage({
                 </div>
 
                 <div className="field">
-                  <label>จำนวนพนักงาน</label>
+                  <label>จำนวนพนักงานที่ต้องการ</label>
                   <div className="field-value">{request.quantity || 1}</div>
                 </div>
 
                 <div className="field">
-                  <label>ความเร่งด่วน</label>
+                  <label>ระดับความเร่งด่วน</label>
                   <div className="field-value">
                     {request.urgency === "urgent" ? "เร่งด่วน" : "ปกติ"}
                   </div>

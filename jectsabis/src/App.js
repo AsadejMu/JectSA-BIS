@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import RequestListPage from "./pages/RequestListPage";
@@ -5,10 +6,21 @@ import RequestDetailPage from "./pages/RequestDetailPage";
 import ApprovalRecordPage from "./pages/ApprovalRecordPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import RequestFormPage from "./pages/RequestFormPage";
-import { createRequest, getRequests, updateRequestStatus } from "./services/requestService";
+import {
+  createRequest,
+  getRequests,
+  updateRequestStatus,
+} from "./services/requestService";
 import { getSession, login, logout } from "./services/authService";
 
-const PAGE_COMPONENTS = { requests: RequestListPage, detail: RequestDetailPage, approvals: ApprovalRecordPage, users: UserProfilePage, newRequest: RequestFormPage };
+const PAGE_COMPONENTS = {
+  requests: RequestListPage,
+  detail: RequestDetailPage,
+  approvals: ApprovalRecordPage,
+  users: UserProfilePage,
+  newRequest: RequestFormPage,
+};
+
 const PAGE_ROLES = {
   requests: ["HR Administrator", "HR Manager", "Approver", "Requester"],
   detail: ["HR Administrator", "HR Manager", "Approver", "Requester"],
@@ -23,6 +35,10 @@ export default function App() {
   const [page, setPage] = useState("requests");
   const [requests, setRequests] = useState([]);
   const [selectedRequestId, setSelectedRequestId] = useState(null);
+
+  // จำหน้าก่อนเข้า Detail
+  const [detailReturnPage, setDetailReturnPage] = useState("requests");
+
   const [loginError, setLoginError] = useState("");
 
   useEffect(() => {
@@ -40,7 +56,6 @@ export default function App() {
     loadUser();
   }, []);
 
-
   useEffect(() => {
     if (!user) return;
 
@@ -56,11 +71,17 @@ export default function App() {
     loadRequests();
   }, [user]);
 
-  const allowed = (target, currentUser = user) => Boolean(currentUser && PAGE_ROLES[target]?.includes(currentUser.role));
+  const allowed = (target, currentUser = user) =>
+    Boolean(currentUser && PAGE_ROLES[target]?.includes(currentUser.role));
+
   const navigate = (target) => {
-    if (allowed(target)) setPage(target);
-    else setPage("requests");
+    if (allowed(target)) {
+      setPage(target);
+    } else {
+      setPage("requests");
+    }
   };
+
   const handleLogin = async (email, password) => {
     const result = await login(email, password);
 
@@ -79,7 +100,9 @@ export default function App() {
     setUser(null);
     setPage("requests");
     setSelectedRequestId(null);
+    setDetailReturnPage("requests");
   };
+
   const addRequest = async (data) => {
     try {
       const created = await createRequest({
@@ -97,8 +120,11 @@ export default function App() {
       alert("บันทึกคำขอไม่สำเร็จ กรุณาลองใหม่");
     }
   };
+
   const decideRequest = async (id, status, note) => {
-    if (!["HR Administrator", "HR Manager", "Approver"].includes(user?.role)) {
+    if (
+      !["HR Administrator", "HR Manager", "Approver"].includes(user?.role)
+    ) {
       return;
     }
 
@@ -118,7 +144,6 @@ export default function App() {
     }
   };
 
-
   const openDetail = (id) => {
     const request = requests.find((item) => item.id === id);
 
@@ -131,6 +156,9 @@ export default function App() {
       return;
     }
 
+    // จำหน้าที่กำลังเปิดอยู่ก่อนเข้า Detail
+    setDetailReturnPage(page);
+
     setSelectedRequestId(id);
     setPage("detail");
   };
@@ -139,11 +167,41 @@ export default function App() {
     return <div>กำลังโหลด...</div>;
   }
 
-  if (!user) return <LoginPage onLogin={handleLogin} errorMessage={loginError} />;
+  if (!user) {
+    return (
+      <LoginPage
+        onLogin={handleLogin}
+        errorMessage={loginError}
+      />
+    );
+  }
+
   const currentPage = allowed(page) ? page : "requests";
   const Page = PAGE_COMPONENTS[currentPage] || RequestListPage;
-  const visibleRequests = user.role === "Requester" ? requests.filter((r) => r.requesterEmail === user.email || r.requester === user.name) : requests;
-  const selectedRequest = visibleRequests.find((item) => item.id === selectedRequestId) || null;
 
-  return <Page user={user} requests={visibleRequests} request={selectedRequest} onNavigate={navigate} onOpenRequest={openDetail} onCreateRequest={addRequest} onDecideRequest={decideRequest} onLogout={handleLogout} />;
+  const visibleRequests =
+    user.role === "Requester"
+      ? requests.filter(
+          (r) =>
+            r.requesterEmail === user.email ||
+            r.requester === user.name
+        )
+      : requests;
+
+  const selectedRequest =
+    visibleRequests.find((item) => item.id === selectedRequestId) || null;
+
+  return (
+    <Page
+      user={user}
+      requests={visibleRequests}
+      request={selectedRequest}
+      backPage={detailReturnPage}
+      onNavigate={navigate}
+      onOpenRequest={openDetail}
+      onCreateRequest={addRequest}
+      onDecideRequest={decideRequest}
+      onLogout={handleLogout}
+    />
+  );
 }

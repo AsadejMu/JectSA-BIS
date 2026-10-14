@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Layout from "../components/Layout";
 
-const LABEL = { pending: "รออนุมัติ", approved: "อนุมัติแล้ว", rejected: "ไม่อนุมัติ" };
+const LABEL = { pending: "รออนุมัติ", approved: "อนุมัติ", rejected: "ไม่อนุมัติ" };
 const CLASS = { pending: "status", approved: "status green", rejected: "status red" };
 const TABS = [{ key: "all", label: "ทั้งหมด" }, { key: "pending", label: "รออนุมัติ" }, { key: "approved", label: "อนุมัติแล้ว" }, { key: "rejected", label: "ไม่อนุมัติ" }];
 
@@ -14,9 +14,9 @@ export default function RequestListPage({ user, requests = [], onNavigate, onLog
 
   return (
     
-    <Layout active="requests" crumb={["Manpower Requests", "Request List"]} onNavigate={onNavigate} onLogout={onLogout} user={user}>
+    <Layout active="requests" crumb={["Manpower Requests", "Requests"]} onNavigate={onNavigate} onLogout={onLogout} user={user}>
       {["HR Administrator", "Requester"].includes(user?.role) && (
-  <div className="heading"><div><h1>List Requests Manpower</h1><div className="subtitle page-sub">รายการคำขอกำลังคนเพิ่ม</div></div>
+  <div className="heading"><div><h1>ศูนย์คำขอ</h1><div className="subtitle page-sub">รายการคำขออัตรากำลังคน</div></div>
     <button
       className="btn primary"
       onClick={() => onNavigate?.("newRequest")}
@@ -29,7 +29,7 @@ export default function RequestListPage({ user, requests = [], onNavigate, onLog
         
         <div className="summary-card"><div className="label">คำขอทั้งหมด</div><div className="value">{requests.length}</div></div>
         <div className="summary-card"><div className="label">รออนุมัติ</div><div className="value">{count("pending")}</div></div>
-        <div className="summary-card"><div className="label">อนุมัติแล้ว</div><div className="value">{count("approved")}</div></div>
+        <div className="summary-card"><div className="label">อนุมัติ</div><div className="value">{count("approved")}</div></div>
         <div className="summary-card"><div className="label">ไม่อนุมัติ</div><div className="value">{count("rejected")}</div></div>
       </section>
       <section className="panel"><div className="toolbar"><div className="tabs">{TABS.map((t) => <button key={t.key} className={tab === t.key ? "tab on" : "tab"} onClick={() => setTab(t.key)}>{t.label}</button>)}</div><input className="search" type="search" placeholder="ค้นหาตำแหน่ง ผู้ขอ หรือรหัสคำขอ" value={query} onChange={(e) => setQuery(e.target.value)} /></div>

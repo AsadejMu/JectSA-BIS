@@ -2,13 +2,13 @@
 const NAV_ITEMS = [
   {
     icon: "▤",
-    label: "Manpower Requests",
+    label: "Requests",
     page: "requests",
-    roles: ["HR Administrator", "HR Manager", "Approver", "Requester"],
+    roles: ["HR Administrator", "HR Manager", "Requester"],
   },
   {
     icon: "✓",
-    label: "ศูนย์อนุมัติ",
+    label: "Approvals",
     page: "approvals",
     roles: ["HR Administrator", "HR Manager", "Approver"],
   },
@@ -21,10 +21,10 @@ const NAV_ITEMS = [
 ];
 
 const ROLE_LABELS = {
-  "HR Administrator": "ผู้ดูแลระบบ",
-  "HR Manager": "ฝ่ายบุคคล",
-  Approver: "ผู้อนุมัติ",
-  Requester: "ผู้ส่งคำขอ",
+  "HR Administrator": "Administrator",
+  "HR Manager": "HR Manager",
+  Approver: "Approver",
+  Requester: "Requester",
 };
 
 export default function Layout({ active, crumb, user, onNavigate, onLogout, children }) {
@@ -33,7 +33,7 @@ export default function Layout({ active, crumb, user, onNavigate, onLogout, chil
   const navItems = NAV_ITEMS.filter((item) => item.roles.includes(user?.role));
   return <div className="app">
     <aside className="sidebar">
-      <div className="brand"><div className="brand-icon">M</div><div><strong>Manpower Plan</strong><small>Workforce Management</small></div></div>
+      <div className="brand"><div className="brand-icon">R</div><div><strong>Rising Universe</strong><small>Workforce Management</small></div></div>
       <div className="nav-label">เมนูหลัก</div>
       <nav className="nav">{navItems.map((item) => <button key={item.page} type="button" className={item.page === active ? "active" : undefined} onClick={() => onNavigate?.(item.page)}><span className="ico">{item.icon}</span> {item.label}</button>)}</nav>
       <div className="sidebar-bottom"><div className="avatar">{initials}</div><div><strong>{name}</strong><small>{ROLE_LABELS[user?.role] || user?.role}</small></div></div>

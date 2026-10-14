@@ -1,11 +1,10 @@
-
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
 import { getApprovalRecords } from "../services/requestService";
 
 const LABEL = {
   pending: "รออนุมัติ",
-  approved: "อนุมัติแล้ว",
+  approved: "อนุมัติ",
   rejected: "ไม่อนุมัติ",
 };
 
@@ -18,7 +17,7 @@ const CLASS = {
 const TABS = [
   { key: "all", label: "ทั้งหมด" },
   { key: "pending", label: "รออนุมัติ" },
-  { key: "approved", label: "อนุมัติแล้ว" },
+  { key: "approved", label: "อนุมัติ" },
   { key: "rejected", label: "ไม่อนุมัติ" },
 ];
 
@@ -32,7 +31,7 @@ export default function ApprovalRecordPage({
 }) {
   const [tab, setTab] = useState("all");
   const [query, setQuery] = useState("");
-  const [toast, setToast] = useState("");
+  const [toast] = useState("");
 
   const [approvalRecords, setApprovalRecords] = useState([]);
   const [loadingRecords, setLoadingRecords] = useState(true);
@@ -60,22 +59,6 @@ export default function ApprovalRecordPage({
   const count = (status) =>
     requests.filter((r) => r.status === status).length;
 
-  const decide = async (request, status) => {
-    try {
-      await onDecideRequest?.(request.id, status, "");
-
-      setToast(
-        `${request.id} เปลี่ยนสถานะเป็น “${LABEL[status]}” แล้ว`
-      );
-
-      const data = await getApprovalRecords();
-      setApprovalRecords(data);
-    } catch (error) {
-      console.error("ดำเนินการอนุมัติไม่สำเร็จ:", error);
-      setToast("ดำเนินการไม่สำเร็จ กรุณาตรวจสอบข้อผิดพลาด");
-    }
-  };
-
   const q = query.trim().toLowerCase();
 
   const visible = requests.filter(
@@ -90,7 +73,7 @@ export default function ApprovalRecordPage({
   return (
     <Layout
       active="approvals"
-      crumb={["Approval Center", "Pending Approvals"]}
+      crumb={["Approval Center", "Approvals"]}
       onNavigate={onNavigate}
       onLogout={onLogout}
       user={user}
@@ -114,7 +97,7 @@ export default function ApprovalRecordPage({
         </div>
 
         <div className="summary-card">
-          <div className="label">อนุมัติแล้ว</div>
+          <div className="label">อนุมัติ</div>
           <div className="value">{count("approved")}</div>
         </div>
 
@@ -181,30 +164,14 @@ export default function ApprovalRecordPage({
                     </span>
                   </td>
                   <td>
-                    {r.status === "pending" ? (
-                      <div className="actions">
-                        <button
-                          className="btn approve"
-                          onClick={() => decide(r, "approved")}
-                        >
-                          อนุมัติ
-                        </button>
-                        <button
-                          className="btn reject"
-                          onClick={() => decide(r, "rejected")}
-                        >
-                          ปฏิเสธ
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        className="btn"
-                        onClick={() => onOpenRequest?.(r.id)}
-                      >
-                        ดูรายละเอียด
-                      </button>
-                    )}
+                    <button
+                      className="btn"
+                      onClick={() => onOpenRequest?.(r.id)}
+                    >
+                      ดูรายละเอียด
+                    </button>
                   </td>
+
                 </tr>
               ))}
             </tbody>
@@ -217,13 +184,24 @@ export default function ApprovalRecordPage({
           )}
         </div>
       </section>
+      <section
+        className="panel"
+        style={{
+          marginTop: 20,
+          padding: "24px 20px",
+        }}
+      >
+        <h2 style={{ margin: "0 0 12px 0" }}>
+          ประวัติการอนุมัติ
+        </h2>
 
-      <section className="panel" style={{ marginTop: 20 }}>
-        <h2>ประวัติการอนุมัติ</h2>
-
-        <div className="subtitle page-sub">
+        <div
+          className="subtitle page-sub"
+          style={{ marginBottom: 20 }}
+        >
           ข้อมูลจากตาราง approval_records
         </div>
+
 
         {loadingRecords ? (
           <div className="empty">กำลังโหลดประวัติ...</div>
@@ -267,8 +245,8 @@ export default function ApprovalRecordPage({
                     <td>
                       {record.created_at
                         ? new Date(record.created_at).toLocaleString(
-                            "th-TH"
-                          )
+                          "th-TH"
+                        )
                         : "-"}
                     </td>
                   </tr>
