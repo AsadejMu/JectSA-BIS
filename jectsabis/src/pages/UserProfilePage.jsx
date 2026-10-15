@@ -225,7 +225,7 @@ export default function UserProfilePage({
         <div>
           <h1>ผู้ใช้งานและสิทธิ์</h1>
           <div className="subtitle page-sub">
-            สร้างบัญชี | Change Role | Reset Password และ Lock / Unlock ผู้บัญชี
+            สร้างบัญชี | Change Role | Reset Password และ Lock / Unlock บัญชี
           </div>
         </div>
 
@@ -578,7 +578,7 @@ export default function UserProfilePage({
                           update(
                             u.id,
                             { active: !u.active },
-                            `${u.active ? "ปิด" : "เปิด"}บัญชี ${u.name} แล้ว`
+                            `${u.active ? "Unlock" : "Lock"} บัญชี ${u.name} แล้ว`
                           )
                         }
                       >

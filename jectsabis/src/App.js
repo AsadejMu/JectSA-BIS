@@ -29,6 +29,12 @@ const PAGE_ROLES = {
   newRequest: ["HR Administrator", "HR Manager", "Requester"],
 };
 
+const getHomePage = (user) => {
+  if (user?.role === "Approver") return "approvals";
+  if (user?.role === "Requester") return "requests";
+  return "requests";
+};
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -41,20 +47,26 @@ export default function App() {
 
   const [loginError, setLoginError] = useState("");
 
-  useEffect(() => {
-    async function loadUser() {
-      try {
-        const currentUser = await getSession();
-        setUser(currentUser);
-      } catch (error) {
-        console.error("โหลด session ไม่สำเร็จ:", error);
-      } finally {
-        setAuthLoading(false);
-      }
-    }
 
-    loadUser();
-  }, []);
+useEffect(() => {
+  async function loadUser() {
+    try {
+      const currentUser = await getSession();
+
+      if (currentUser) {
+        setUser(currentUser);
+        setPage(getHomePage(currentUser));
+      }
+    } catch (error) {
+      console.error("โหลด session ไม่สำเร็จ:", error);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  loadUser();
+}, []);
+
 
   useEffect(() => {
     if (!user) return;
@@ -82,18 +94,19 @@ export default function App() {
     }
   };
 
-  const handleLogin = async (email, password) => {
-    const result = await login(email, password);
+  
+const handleLogin = async (email, password) => {
+  const result = await login(email, password);
 
-    if (!result.ok) {
-      setLoginError(result.message);
-      return;
-    }
+  if (!result.ok) {
+    setLoginError(result.message);
+    return;
+  }
 
-    setLoginError("");
-    setUser(result.user);
-    setPage("requests");
-  };
+  setLoginError("");
+  setUser(result.user);
+  setPage(getHomePage(result.user));
+};
 
   const handleLogout = async () => {
     await logout();

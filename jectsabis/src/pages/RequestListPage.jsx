@@ -37,7 +37,7 @@ export default function RequestListPage({ user, requests = [], onNavigate, onLog
           {visible.map((r) => <tr key={r.id}><td>{r.id}</td><td><strong>{r.position}</strong><div className="sub">{r.level}</div></td><td>{r.requester}<div className="sub">{r.dept}</div></td><td>{r.quantity || 1}</td><td>{r.date}</td><td><span className={CLASS[r.status]}>{LABEL[r.status]}</span></td><td><button className="btn" onClick={() => onOpenRequest?.(r.id)}>ดูรายละเอียด</button></td></tr>)}
         </tbody></table>{visible.length === 0 && <div className="empty">ไม่พบคำขอที่ตรงกับเงื่อนไข</div>}</div>
       </section>
-      <div className="notice" style={{ marginTop: 14 }}>เวอร์ชันทดลอง: ข้อมูลจัดเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น</div>
+      <div className="notice" style={{ marginTop: 14 }}>หมายเหตุ: ข้อมูลคำขอจะถูกจัดเก็บในฐานข้อมูล Supabase</div>
     </Layout>
   );
 }

@@ -40,7 +40,7 @@ export default function RequestFormPage({ user, onNavigate, onLogout, onCreateRe
             <div className="field" style={{ marginTop: 20 }}><label htmlFor="reason">เหตุผลในการขออัตรากำลัง *</label><textarea id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="อธิบายความจำเป็น เช่น ปริมาณงานเพิ่มขึ้น หรือมีพนักงานลาออก" required /></div>
             <div className="form-actions" style={{ marginTop: 20 }}><button type="button" className="btn" onClick={() => onNavigate?.("requests")}>ยกเลิก</button><button type="submit" className="btn primary">ส่งคำขอ</button></div>
           </form>
-          <div className="notice" style={{ marginTop: 16 }}>ข้อมูลในเวอร์ชันนี้บันทึกใน localStorage ของเบราว์เซอร์เท่านั้น ยังไม่ได้เชื่อมฐานข้อมูลหรือแชร์ระหว่างเครื่อง</div>
+          <div className="notice" style={{ marginTop: 16 }}>หมายเหตุ: ข้อมูลคำขอจะถูกจัดเก็บในฐานข้อมูล Supabase</div>
         </div>
       </section>
     </Layout>
